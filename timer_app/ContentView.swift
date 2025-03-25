@@ -10,19 +10,22 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color.blue.opacity(0.5).ignoresSafeArea()
+            // Background Color
+            Color(hex: "#519CAF").ignoresSafeArea()
+
             HStack {
                 Spacer()
                 VStack {
                     // Navbar with button
                     Rectangle()
-                        .fill(Color.blue.opacity(0.7))
+                        .fill(Color(hex: "#1B454F")) // Dark teal for navbar
                         .frame(height: 40)
                         .cornerRadius(15)
                         .overlay(
                             HStack {
                                 Text("Timer")
                                     .font(.headline)
+                                    .foregroundColor(.white)
                                 
                                 Spacer()
                                 
@@ -31,7 +34,7 @@ struct ContentView: View {
                                 }) {
                                     Image(systemName: "ellipsis.circle")
                                         .font(.system(size: 20))
-                                        .foregroundStyle(.black)
+                                        .foregroundColor(.white)
                                 }
                             }
                             .padding(.horizontal)
@@ -42,7 +45,7 @@ struct ContentView: View {
                     // Circle for Timer and Time Selection
                     ZStack {
                         Circle()
-                            .stroke(Color.blue, lineWidth: 13)
+                            .stroke(Color(hex: "#1B454F"), lineWidth: 13) // Dark teal for the circle border
                             .frame(width: 350, height: 350)
                         
                         VStack {
@@ -50,6 +53,7 @@ struct ContentView: View {
                             Text(String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
                                 .font(.largeTitle)
                                 .padding()
+                                .foregroundColor(.white) // White text for the timer display
                         }
                     }
                     .padding()
@@ -60,6 +64,7 @@ struct ContentView: View {
                         Picker("Hours", selection: $selectedHour) {
                             ForEach(hours, id: \.self) { hour in
                                 Text("\(hour)h")
+                                    .foregroundColor(.white)
                             }
                         }
                         .frame(width: 80)
@@ -69,6 +74,7 @@ struct ContentView: View {
                         Picker("Minutes", selection: $selectedMinute) {
                             ForEach(minutesAndSeconds, id: \.self) { minute in
                                 Text("\(minute)m")
+                                    .foregroundColor(.white)
                             }
                         }
                         .frame(width: 80)
@@ -78,6 +84,7 @@ struct ContentView: View {
                         Picker("Seconds", selection: $selectedSecond) {
                             ForEach(minutesAndSeconds, id: \.self) { second in
                                 Text("\(second)s")
+                                    .foregroundColor(.white)
                             }
                         }
                         .frame(width: 80)
@@ -93,12 +100,12 @@ struct ContentView: View {
                             print("Clicked Start")
                         }) {
                             Rectangle()
-                                .fill(Color.blue)
+                                .fill(Color(hex: "#1B454F")) // Dark teal for the start button
                                 .frame(width: 125, height: 45)
                                 .cornerRadius(10)
                                 .overlay(
                                     Text("Start")
-                                        .foregroundStyle(Color.black)
+                                        .foregroundColor(.white) // White text for the button
                                         .font(.headline)
                                 )
                         }
@@ -109,6 +116,27 @@ struct ContentView: View {
                 Spacer()
             }
         }
+    }
+}
+
+// Hex Color Extension
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scanner = Scanner(string: hex)
+        
+        if hex.hasPrefix("#") {
+            _ = scanner.scanString("#")
+        }
+        
+        var rgb: UInt64 = 0
+        scanner.scanHexInt64(&rgb)
+        
+        let red = Double((rgb & 0xFF0000) >> 16) / 255.0
+        let green = Double((rgb & 0x00FF00) >> 8) / 255.0
+        let blue = Double(rgb & 0x0000FF) / 255.0
+        
+        self.init(red: red, green: green, blue: blue)
     }
 }
 
