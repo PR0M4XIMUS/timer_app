@@ -39,7 +39,10 @@ struct ContentView: View {
                             }
                             .padding(.horizontal)
                         )
-                    
+                        .overlay(
+                                RoundedRectangle(cornerRadius: 15) // Match corner radius
+                                    .stroke(Color.black, lineWidth: 1.5) // Black border
+                                )
                     Spacer()
                     
                     // Circle for Timer and Time Selection
@@ -47,6 +50,16 @@ struct ContentView: View {
                         Circle()
                             .stroke(Color(hex: "#333C45"), lineWidth: 13)
                             .frame(width: 350, height: 350)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.black, lineWidth: 2)
+                                    .frame(width: 364, height: 364)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.black, lineWidth: 2)
+                                    .frame(width: 336, height: 336)
+                            )
                         
                         VStack {
                             // Display the selected time in HH:MM:SS format
@@ -111,6 +124,10 @@ struct ContentView: View {
                                         .foregroundColor(.white) // White text for the button
                                         .font(.headline)
                                 )
+                                .overlay(
+                                        RoundedRectangle(cornerRadius: 10) // Match corner radius
+                                            .stroke(Color.black, lineWidth: 1.5) // Black border
+                                        )
                         }
                     }
                     .padding()

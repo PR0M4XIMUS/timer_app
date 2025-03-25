@@ -19,6 +19,7 @@ struct SavedTimesView: View {
                             .frame(maxWidth: .infinity) // Make the rectangle wide
                             .background(Color(hex: "#D9535A"))
                             .cornerRadius(10)
+                            
 
                         Spacer()
 
