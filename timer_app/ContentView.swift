@@ -4,6 +4,8 @@ struct ContentView: View {
     @State private var selectedHour = 0
     @State private var selectedMinute = 0
     @State private var selectedSecond = 0
+    @State private var savedTimes = [String]() // List to store saved times
+    @State private var currentTime = "00:00:00" // The current time for the timer
 
     let hours = Array(0..<24) // For hours (0 to 23)
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
@@ -18,7 +20,7 @@ struct ContentView: View {
                 VStack {
                     // Navbar with button
                     Rectangle()
-                        .fill(Color(hex: "#333C45")) 
+                        .fill(Color(hex: "#333C45"))
                         .frame(height: 40)
                         .cornerRadius(15)
                         .overlay(
@@ -29,7 +31,7 @@ struct ContentView: View {
                                 
                                 Spacer()
                                 
-                                NavigationLink(destination: SavedTimesView()) {
+                                NavigationLink(destination: SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)) {
                                     Image(systemName: "clock")
                                         .font(.system(size: 20))
                                         .foregroundColor(.white)
@@ -95,7 +97,10 @@ struct ContentView: View {
                     // Start Button
                     VStack {
                         Button(action: {
-                            print("Clicked Start")
+                            let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
+                            if timeString != "00:00:00" {
+                                savedTimes.append(timeString) // Save the time when it's not 00:00:00
+                            }
                         }) {
                             Rectangle()
                                 .fill(Color(hex: "#333C45"))

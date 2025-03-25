@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct SavedTimesView: View {
-    @State private var savedTimes = ["Time 1", "Time 2", "Time 3", "Time 4"] // Example data
+    @Binding var savedTimes: [String] // Bind the saved times from ContentView
+    @Binding var currentTime: String // Bind the current time from ContentView
+
+    @State private var selectedTime = "" // To store the selected time from the list
 
     var body: some View {
         ZStack {
@@ -32,8 +35,10 @@ struct SavedTimesView: View {
                                 .clipShape(Circle())
                         }
 
-                        // Use Button (Navigate Back)
-                        NavigationLink(destination: ContentView()) {
+                        // Green Button (Removed functionality)
+                        Button(action: {
+                            // No functionality for the green button anymore
+                        }) {
                             Image(systemName: "arrow.right.circle.fill")
                                 .foregroundColor(.white)
                                 .padding(10)
@@ -51,5 +56,5 @@ struct SavedTimesView: View {
 }
 
 #Preview {
-    SavedTimesView()
+    SavedTimesView(savedTimes: .constant(["Time 1", "Time 2", "Time 3", "Time 4"]), currentTime: .constant("00:00:00"))
 }
