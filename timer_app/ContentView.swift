@@ -11,14 +11,14 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // Background Color
-            Color(hex: "#519CAF").ignoresSafeArea()
+            Color(hex: "#D9535A").ignoresSafeArea()
 
             HStack {
                 Spacer()
                 VStack {
                     // Navbar with button
                     Rectangle()
-                        .fill(Color(hex: "#1B454F")) // Dark teal for navbar
+                        .fill(Color(hex: "#333C45")) 
                         .frame(height: 40)
                         .cornerRadius(15)
                         .overlay(
@@ -45,7 +45,7 @@ struct ContentView: View {
                     // Circle for Timer and Time Selection
                     ZStack {
                         Circle()
-                            .stroke(Color(hex: "#1B454F"), lineWidth: 13) // Dark teal for the circle border
+                            .stroke(Color(hex: "#333C45"), lineWidth: 13)
                             .frame(width: 350, height: 350)
                         
                         VStack {
@@ -100,7 +100,7 @@ struct ContentView: View {
                             print("Clicked Start")
                         }) {
                             Rectangle()
-                                .fill(Color(hex: "#1B454F")) // Dark teal for the start button
+                                .fill(Color(hex: "#333C45"))
                                 .frame(width: 125, height: 45)
                                 .cornerRadius(10)
                                 .overlay(
