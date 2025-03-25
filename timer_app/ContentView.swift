@@ -29,10 +29,8 @@ struct ContentView: View {
                                 
                                 Spacer()
                                 
-                                Button(action: {
-                                    print("The button was pressed")
-                                }) {
-                                    Image(systemName: "ellipsis.circle")
+                                NavigationLink(destination: SavedTimesView()) {
+                                    Image(systemName: "clock")
                                         .font(.system(size: 20))
                                         .foregroundColor(.white)
                                 }
