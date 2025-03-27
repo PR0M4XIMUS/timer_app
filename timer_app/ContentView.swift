@@ -6,9 +6,14 @@ struct ContentView: View {
     @State private var selectedSecond = 0
     @State private var savedTimes = [String]() // List to store saved times
     @State private var currentTime = "00:00:00" // The current time for the timer
+    @State private var progress: CGFloat = 0.0
+    @State private var isAnimating = false
 
     let hours = Array(0..<24) // For hours (0 to 23)
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
+    var animationDuration: Double {
+        return Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond) // Convert to total seconds
+        }
 
     var body: some View {
         ZStack {
@@ -61,6 +66,12 @@ struct ContentView: View {
                                     .frame(width: 336, height: 336)
                             )
                         
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(Color.black, style: StrokeStyle(lineWidth: 13, lineCap: .round))
+                            .frame(width: 350, height: 350)
+                            .rotationEffect(.degrees(-90))
+                        
                         VStack {
                             // Display the selected time in HH:MM:SS format
                             Text(String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
@@ -110,6 +121,10 @@ struct ContentView: View {
                     // Start Button
                     VStack {
                         Button(action: {
+                            withAnimation(.linear(duration: animationDuration)) {
+                                isAnimating.toggle()
+                                progress = isAnimating ? 1.0 : 0.0  // Toggle animation
+                            }
                             let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
                             if timeString != "00:00:00" {
                                 savedTimes.append(timeString) // Save the time when it's not 00:00:00
@@ -120,10 +135,11 @@ struct ContentView: View {
                                 .frame(width: 125, height: 45)
                                 .cornerRadius(10)
                                 .overlay(
-                                    Text("Start")
+                                    Text(isAnimating ? "Reset" : "Start")
                                         .foregroundColor(.white) // White text for the button
                                         .font(.headline)
                                 )
+                                .animation(.linear(duration: 0), value: progress) // Smooth animation
                                 .overlay(
                                         RoundedRectangle(cornerRadius: 10) // Match corner radius
                                             .stroke(Color.black, lineWidth: 1.5) // Black border
