@@ -35,6 +35,7 @@ struct SavedTimesView: View {
                                 .background(Color.red)
                                 .clipShape(Circle())
                         }
+                        
 
                         // Green Button (Removed functionality)
                         Button(action: {
