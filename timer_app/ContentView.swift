@@ -121,14 +121,20 @@ struct ContentView: View {
                     // Start Button
                     VStack {
                         Button(action: {
-                            withAnimation(.linear(duration: animationDuration)) {
-                                isAnimating.toggle()
-                                progress = isAnimating ? 1.0 : 0.0  // Toggle animation
-                            }
-                            let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
-                            if timeString != "00:00:00" {
-                                savedTimes.append(timeString) // Save the time when it's not 00:00:00
-                            }
+                            if isAnimating {
+                                    isAnimating = false
+                                    progress = 0.0 // Reset instantly without animation
+                                } else {
+                                    isAnimating = true
+                                    withAnimation(.linear(duration: animationDuration)) {
+                                        progress = 1.0
+                                    }
+                                    // Automatically reset after animation completes
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+                                                progress = 0.0 // Reset instantly without animation
+                                                isAnimating = false
+                                            }
+                                }
                         }) {
                             Rectangle()
                                 .fill(Color(hex: "#333C45"))
