@@ -121,6 +121,10 @@ struct ContentView: View {
                     // Start Button
                     VStack {
                         Button(action: {
+                            let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
+                                                        if timeString != "00:00:00" {
+                                                            savedTimes.append(timeString) // Save the time when it's not 00:00:00
+                                                        }
                             if isAnimating {
                                     isAnimating = false
                                     progress = 0.0 // Reset instantly without animation
