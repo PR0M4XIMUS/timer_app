@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var currentTime = "00:00:00" // The current time for the timer
     @State private var progress: CGFloat = 0.0
     @State private var isAnimating = false
+    
 
     let hours = Array(0..<24) // For hours (0 to 23)
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
@@ -36,10 +37,24 @@ struct ContentView: View {
                                 
                                 Spacer()
                                 
-                                NavigationLink(destination: SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)) {
-                                    Image(systemName: "clock")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.white)
+                                
+                                HStack {
+                                    
+                                    Button(action: { 
+                                        print("Paintbrush button tapped!")
+                                    }) {
+                                        Image(systemName: "paintbrush.pointed")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.white)
+                                    }
+                                    .padding()
+
+                                    
+                                    NavigationLink(destination: SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)) {
+                                        Image(systemName: "clock")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.white)
+                                    }
                                 }
                             }
                             .padding(.horizontal)
