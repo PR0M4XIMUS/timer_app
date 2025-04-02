@@ -40,7 +40,7 @@ struct ContentView: View {
                                 
                                 HStack {
                                     
-                                    Button(action: { 
+                                    Button(action: {
                                         print("Paintbrush button tapped!")
                                     }) {
                                         Image(systemName: "paintbrush.pointed")
