@@ -161,7 +161,11 @@ struct ContentView: View {
                             } else {
                                 // Start button was pressed - only save and start if time isn't 00:00:00
                                 if timeString != "00:00:00" {
-                                    savedTimes.append(timeString) // Save the time only when starting
+                                    // Only save the time if it's not already in the list
+                                    if !savedTimes.contains(timeString) {
+                                        savedTimes.append(timeString)
+                                    }
+                                    
                                     isAnimating = true
                                     
                                     // Set up the initial remaining seconds
@@ -213,7 +217,6 @@ struct ContentView: View {
                                         .stroke(Color.black, lineWidth: 1.5)
                                 )
                         }
-
                     }
                     .padding()
                 }
@@ -229,4 +232,3 @@ struct ContentView: View {
             .environmentObject(ThemeManager())
     }
 }
-
