@@ -151,15 +151,18 @@ struct ContentView: View {
                     VStack {
                         Button(action: {
                             let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
+                            var time_isBlank = false
                             if timeString != "00:00:00" {
                                 savedTimes.append(timeString) // Save the time when it's not 00:00:00
+                            } else {
+                                time_isBlank = true
                             }
                             if isAnimating {
                                 isAnimating = false
                                 progress = 0.0 // Reset instantly without animation
                                 timer?.invalidate() // Stop the timer
                                 timer = nil
-                            } else {
+                            } else if !time_isBlank {
                                 isAnimating = true
                                 // Set up the initial remaining seconds
                                 remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
