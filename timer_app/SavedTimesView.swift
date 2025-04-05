@@ -60,6 +60,9 @@ struct SavedTimesView: View {
 }
 
 #Preview {
-    SavedTimesView(savedTimes: .constant(["Time 1", "Time 2", "Time 3", "Time 4"]), currentTime: .constant("00:00:00"))
-        .environmentObject(ThemeManager())
+    NavigationStack {
+        SavedTimesView(savedTimes: .constant(["Time 1", "Time 2"]), currentTime: .constant("00:00:00"))
+            .environmentObject(ThemeManager())
+    }
 }
+

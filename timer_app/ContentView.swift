@@ -58,11 +58,16 @@ struct ContentView: View {
                                     }
                                     .padding()
                                     
-                                    NavigationLink(destination: SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)) {
+                                    // In ContentView.swift, modify the NavigationLink:
+                                    NavigationLink {
+                                        SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)
+                                            .environmentObject(themeManager) // Explicitly pass the environment object
+                                    } label: {
                                         Image(systemName: "clock")
                                             .font(.system(size: 20))
                                             .foregroundColor(themeManager.textColor)
                                     }
+
                                 }
                             }
                             .padding(.horizontal)
@@ -208,6 +213,9 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
-        .environmentObject(ThemeManager())
+    NavigationStack {
+        ContentView()
+            .environmentObject(ThemeManager())
+    }
 }
+
