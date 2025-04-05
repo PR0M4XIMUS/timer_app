@@ -11,7 +11,8 @@ struct ContentView: View {
     @State private var remainingSeconds = 0 // Remaining seconds for countdown
     @State private var timer: Timer? = nil
     
-
+    @EnvironmentObject private var themeManager: ThemeManager
+    
     let hours = Array(0..<24) // For hours (0 to 23)
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
     var animationDuration: Double {
@@ -28,57 +29,55 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // Background Color
-            Color(hex: "#D9535A").ignoresSafeArea()
+            // Background Color - now using theme
+            themeManager.backgroundColor.ignoresSafeArea()
 
             HStack {
                 Spacer()
                 VStack {
                     // Navbar with button
                     Rectangle()
-                        .fill(Color(hex: "#333C45"))
+                        .fill(themeManager.accentColor)
                         .frame(height: 40)
                         .cornerRadius(15)
                         .overlay(
                             HStack {
                                 Text("Timer")
                                     .font(.headline)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.textColor)
                                 
                                 Spacer()
                                 
-                                
                                 HStack {
-                                    
                                     Button(action: {
-                                        print("Paintbrush button tapped!")
+                                        themeManager.nextTheme() // Change to the next theme
                                     }) {
                                         Image(systemName: "paintbrush.pointed")
                                             .font(.system(size: 20))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(themeManager.textColor)
                                     }
                                     .padding()
-
                                     
                                     NavigationLink(destination: SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)) {
                                         Image(systemName: "clock")
                                             .font(.system(size: 20))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(themeManager.textColor)
                                     }
                                 }
                             }
                             .padding(.horizontal)
                         )
                         .overlay(
-                                RoundedRectangle(cornerRadius: 15) // Match corner radius
-                                    .stroke(Color.black, lineWidth: 1.5) // Black border
-                                )
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(Color.black, lineWidth: 1.5)
+                        )
+                    
                     Spacer()
                     
                     // Circle for Timer and Time Selection
                     ZStack {
                         Circle()
-                            .stroke(Color(hex: "#333C45"), lineWidth: 13)
+                            .stroke(themeManager.accentColor, lineWidth: 13)
                             .frame(width: 350, height: 350)
                             .overlay(
                                 Circle()
@@ -102,7 +101,7 @@ struct ContentView: View {
                             Text(isAnimating ? formattedTime : String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
                                 .font(.largeTitle)
                                 .padding()
-                                .foregroundColor(.white) // White text for the timer display
+                                .foregroundColor(themeManager.textColor) // Dynamic text color
                         }
                     }
                     .padding()
@@ -113,7 +112,7 @@ struct ContentView: View {
                         Picker("Hours", selection: $selectedHour) {
                             ForEach(hours, id: \.self) { hour in
                                 Text("\(hour)h")
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.textColor)
                             }
                         }
                         .frame(width: 80)
@@ -123,7 +122,7 @@ struct ContentView: View {
                         Picker("Minutes", selection: $selectedMinute) {
                             ForEach(minutesAndSeconds, id: \.self) { minute in
                                 Text("\(minute)m")
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.textColor)
                             }
                         }
                         .frame(width: 80)
@@ -133,7 +132,7 @@ struct ContentView: View {
                         Picker("Seconds", selection: $selectedSecond) {
                             ForEach(minutesAndSeconds, id: \.self) { second in
                                 Text("\(second)s")
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.textColor)
                             }
                         }
                         .frame(width: 80)
@@ -185,24 +184,23 @@ struct ContentView: View {
                             }
                         }) {
                             Rectangle()
-                                .fill(Color(hex: "#333C45"))
+                                .fill(themeManager.accentColor)
                                 .frame(width: 125, height: 45)
                                 .cornerRadius(10)
                                 .overlay(
                                     Text(isAnimating ? "Reset" : "Start")
-                                        .foregroundColor(.white) // White text for the button
+                                        .foregroundColor(themeManager.textColor) // Dynamic text color
                                         .font(.headline)
                                 )
                                 .animation(.linear(duration: 0), value: progress) // Smooth animation
                                 .overlay(
-                                        RoundedRectangle(cornerRadius: 10) // Match corner radius
-                                            .stroke(Color.black, lineWidth: 1.5) // Black border
-                                        )
+                                    RoundedRectangle(cornerRadius: 10) // Match corner radius
+                                        .stroke(Color.black, lineWidth: 1.5) // Black border
+                                )
                         }
                     }
                     .padding()
                 }
-                
                 Spacer()
             }
         }
@@ -211,4 +209,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(ThemeManager())
 }

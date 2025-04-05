@@ -3,24 +3,26 @@ import SwiftUI
 struct SavedTimesView: View {
     @Binding var savedTimes: [String] // Bind the saved times from ContentView
     @Binding var currentTime: String // Bind the current time from ContentView
-
+    
+    // Access the theme manager from the environment
+    @EnvironmentObject private var themeManager: ThemeManager
+    
     @State private var selectedTime = "" // To store the selected time from the list
 
     var body: some View {
         ZStack {
-            Color(hex: "#333C45").ignoresSafeArea() // Background color
+            themeManager.accentColor.ignoresSafeArea() // Background color using current theme
 
             VStack(spacing: 20) { // Vertical stack with spacing between items
                 ForEach(savedTimes, id: \.self) { time in
                     HStack {
                         Text(time)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.textColor)
                             .padding()
                             .frame(maxWidth: .infinity) // Make the rectangle wide
-                            .background(Color(hex: "#D9535A"))
+                            .background(themeManager.backgroundColor)
                             .cornerRadius(10)
                             
-
                         Spacer()
 
                         // Delete Button
@@ -36,7 +38,6 @@ struct SavedTimesView: View {
                                 .clipShape(Circle())
                         }
                         
-
                         // Green Button (Removed functionality)
                         Button(action: {
                             // No functionality for the green button anymore
@@ -53,10 +54,12 @@ struct SavedTimesView: View {
             }
             .padding()
             .navigationTitle("Saved Times")
+            .foregroundColor(themeManager.textColor) // For the navigation title
         }
     }
 }
 
 #Preview {
     SavedTimesView(savedTimes: .constant(["Time 1", "Time 2", "Time 3", "Time 4"]), currentTime: .constant("00:00:00"))
+        .environmentObject(ThemeManager())
 }
