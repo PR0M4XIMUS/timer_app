@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit // Required for haptic feedback
 
 struct ContentView: View {
     @State private var selectedHour = 0
@@ -18,6 +19,12 @@ struct ContentView: View {
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
     var animationDuration: Double {
         return Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond) // Convert to total seconds
+    }
+    
+    // Function to generate haptic feedback
+    func generateHapticFeedback() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
     }
     
     // Format remaining seconds to HH:MM:SS
@@ -59,7 +66,7 @@ struct ContentView: View {
                                     }
                                     .padding()
                                     
-                                    // Updated NavigationLink to pass recently used times
+                                    // Updated NavigationLink to pass required bindings
                                     NavigationLink {
                                         SavedTimesView(
                                             savedTimes: $savedTimes,
@@ -75,7 +82,6 @@ struct ContentView: View {
                                             .font(.system(size: 20))
                                             .foregroundColor(themeManager.textColor)
                                     }
-
                                 }
                             }
                             .padding(.horizontal)
@@ -200,6 +206,9 @@ struct ContentView: View {
                                         } else {
                                             timer?.invalidate()
                                             timer = nil
+                                            
+                                            // Generate haptic feedback when timer completes
+                                            generateHapticFeedback()
                                         }
                                     }
                                     
