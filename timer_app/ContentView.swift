@@ -64,7 +64,10 @@ struct ContentView: View {
                                         SavedTimesView(
                                             savedTimes: $savedTimes,
                                             currentTime: $currentTime,
-                                            recentlyUsedTimes: $recentlyUsedTimes
+                                            recentlyUsedTimes: $recentlyUsedTimes,
+                                            selectedHour: $selectedHour,
+                                            selectedMinute: $selectedMinute,
+                                            selectedSecond: $selectedSecond
                                         )
                                         .environmentObject(themeManager)
                                     } label: {
@@ -72,6 +75,7 @@ struct ContentView: View {
                                             .font(.system(size: 20))
                                             .foregroundColor(themeManager.textColor)
                                     }
+
                                 }
                             }
                             .padding(.horizontal)
