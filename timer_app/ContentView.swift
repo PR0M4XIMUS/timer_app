@@ -181,8 +181,15 @@ struct ContentView: View {
                                 
                                 // Automatically reset after animation completes
                                 DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-                                    progress = 0.0 // Reset instantly without animation
+                                    
                                     isAnimating = false
+                                    
+                                    withAnimation(
+                                        .smooth(duration:1)
+                                    ) {
+                                        progress = 0
+                                    }
+                                    
                                     timer?.invalidate()
                                     timer = nil
                                 }
