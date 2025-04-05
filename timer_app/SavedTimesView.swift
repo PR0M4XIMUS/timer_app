@@ -3,13 +3,12 @@ import SwiftUI
 struct SavedTimesView: View {
     @Binding var savedTimes: [String] // Bind the saved times from ContentView
     @Binding var currentTime: String // Bind the current time from ContentView
+    @Binding var recentlyUsedTimes: [String] // Bind recently used times
     
     // Access the theme manager from the environment
     @EnvironmentObject private var themeManager: ThemeManager
     
     @State private var selectedTime = "" // To store the selected time from the list
-    
-    // Track items being removed for animation
     @State private var itemsBeingRemoved = Set<String>()
 
     var body: some View {
@@ -18,68 +17,121 @@ struct SavedTimesView: View {
 
             // Add ScrollView to allow scrolling through many saved times
             ScrollView {
-                VStack(spacing: 20) { // Vertical stack with spacing between items
-                    ForEach(savedTimes, id: \.self) { time in
-                        HStack {
-                            Text(time)
-                                .foregroundColor(themeManager.textColor)
-                                .padding()
-                                .frame(maxWidth: .infinity) // Make the rectangle wide
-                                .background(themeManager.backgroundColor)
-                                .cornerRadius(10)
+                VStack(alignment: .leading, spacing: 20) {
+                    // Recently Used Section
+                    if !recentlyUsedTimes.isEmpty {
+                        Text("Recently Used")
+                            .font(.headline)
+                            .foregroundColor(themeManager.textColor)
+                            .padding(.horizontal)
+                        
+                        ForEach(recentlyUsedTimes, id: \.self) { time in
+                            HStack {
+                                Text(time)
+                                    .foregroundColor(themeManager.textColor)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(themeManager.backgroundColor)
+                                    .cornerRadius(10)
+                                    
+                                Spacer()
                                 
-                            Spacer()
-
-                            // Delete Button
-                            Button(action: {
-                                // Mark this item as being removed (for animation)
-                                withAnimation(.easeInOut(duration: 0.5)) {
-                                    itemsBeingRemoved.insert(time)
+                                // Green Button only for recently used times
+                                Button(action: {
+                                    // No functionality for the green button yet
+                                }) {
+                                    Image(systemName: "arrow.right.circle.fill")
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.green)
+                                        .clipShape(Circle())
                                 }
-                                
-                                // Delay actual removal to allow animation to complete
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    if let index = savedTimes.firstIndex(of: time) {
-                                        savedTimes.remove(at: index) // Delete the rectangle
-                                    }
-                                    itemsBeingRemoved.remove(time)
-                                }
-                            }) {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color.red)
-                                    .clipShape(Circle())
                             }
-                            
-                            // Green Button (Removed functionality)
-                            Button(action: {
-                                // No functionality for the green button anymore
-                            }) {
-                                Image(systemName: "arrow.right.circle.fill")
-                                    .foregroundColor(.white)
-                                    .padding(10)
-                                    .background(Color.green)
-                                    .clipShape(Circle())
-                            }
+                            .padding(.horizontal)
                         }
+                        
+                        Divider()
+                            .background(themeManager.textColor)
+                            .padding(.vertical, 5)
+                    }
+                    
+                    // All Saved Times Section
+                    Text("All Saved Times")
+                        .font(.headline)
+                        .foregroundColor(themeManager.textColor)
                         .padding(.horizontal)
-                        .opacity(itemsBeingRemoved.contains(time) ? 0 : 1)
-                        .offset(x: itemsBeingRemoved.contains(time) ? 300 : 0)
+                    
+                    VStack(spacing: 20) {
+                        ForEach(savedTimes, id: \.self) { time in
+                            HStack {
+                                Text(time)
+                                    .foregroundColor(themeManager.textColor)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(themeManager.backgroundColor)
+                                    .cornerRadius(10)
+                                    
+                                Spacer()
+
+                                // Delete Button
+                                Button(action: {
+                                    // Mark this item as being removed (for animation)
+                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                        itemsBeingRemoved.insert(time)
+                                    }
+                                    
+                                    // Delay actual removal to allow animation to complete
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        if let index = savedTimes.firstIndex(of: time) {
+                                            savedTimes.remove(at: index)
+                                        }
+                                        // Also remove from recently used if it's there
+                                        if let recentIndex = recentlyUsedTimes.firstIndex(of: time) {
+                                            recentlyUsedTimes.remove(at: recentIndex)
+                                        }
+                                        itemsBeingRemoved.remove(time)
+                                    }
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.red)
+                                        .clipShape(Circle())
+                                }
+                                
+                                // Green Button
+                                Button(action: {
+                                    // No functionality for the green button yet
+                                }) {
+                                    Image(systemName: "arrow.right.circle.fill")
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.green)
+                                        .clipShape(Circle())
+                                }
+                            }
+                            .padding(.horizontal)
+                            .opacity(itemsBeingRemoved.contains(time) ? 0 : 1)
+                            .offset(x: itemsBeingRemoved.contains(time) ? 300 : 0)
+                        }
                     }
                 }
                 .padding()
                 .animation(.easeInOut, value: savedTimes)
             }
             .navigationTitle("Saved Times")
-            .foregroundColor(themeManager.textColor) // For the navigation title
+            .foregroundColor(themeManager.textColor)
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        SavedTimesView(savedTimes: .constant(["Time 1", "Time 2"]), currentTime: .constant("00:00:00"))
-            .environmentObject(ThemeManager())
+        SavedTimesView(
+            savedTimes: .constant(["01:30:00", "00:45:00"]),
+            currentTime: .constant("00:00:00"),
+            recentlyUsedTimes: .constant(["00:15:00"])
+        )
+        .environmentObject(ThemeManager())
     }
 }

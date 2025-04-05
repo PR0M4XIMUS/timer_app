@@ -5,6 +5,7 @@ struct ContentView: View {
     @State private var selectedMinute = 0
     @State private var selectedSecond = 0
     @State private var savedTimes = [String]() // List to store saved times
+    @State private var recentlyUsedTimes = [String]() // Track recently used times
     @State private var currentTime = "00:00:00" // The current time for the timer
     @State private var progress: CGFloat = 0.0
     @State private var isAnimating = false
@@ -58,16 +59,19 @@ struct ContentView: View {
                                     }
                                     .padding()
                                     
-                                    // In ContentView.swift, modify the NavigationLink:
+                                    // Updated NavigationLink to pass recently used times
                                     NavigationLink {
-                                        SavedTimesView(savedTimes: $savedTimes, currentTime: $currentTime)
-                                            .environmentObject(themeManager) // Explicitly pass the environment object
+                                        SavedTimesView(
+                                            savedTimes: $savedTimes,
+                                            currentTime: $currentTime,
+                                            recentlyUsedTimes: $recentlyUsedTimes
+                                        )
+                                        .environmentObject(themeManager)
                                     } label: {
                                         Image(systemName: "clock")
                                             .font(.system(size: 20))
                                             .foregroundColor(themeManager.textColor)
                                     }
-
                                 }
                             }
                             .padding(.horizontal)
@@ -147,7 +151,7 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    // Start Button
+                    // Start Button with updated logic for recently used times
                     VStack {
                         Button(action: {
                             let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
@@ -164,6 +168,15 @@ struct ContentView: View {
                                     // Only save the time if it's not already in the list
                                     if !savedTimes.contains(timeString) {
                                         savedTimes.append(timeString)
+                                    }
+                                    
+                                    // Add to recently used times list (max 3)
+                                    if let index = recentlyUsedTimes.firstIndex(of: timeString) {
+                                        recentlyUsedTimes.remove(at: index) // Remove from current position if exists
+                                    }
+                                    recentlyUsedTimes.insert(timeString, at: 0) // Add to the beginning
+                                    if recentlyUsedTimes.count > 3 {
+                                        recentlyUsedTimes.removeLast() // Keep only 3 most recent
                                     }
                                     
                                     isAnimating = true
