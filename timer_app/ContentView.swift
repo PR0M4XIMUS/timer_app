@@ -151,50 +151,50 @@ struct ContentView: View {
                     VStack {
                         Button(action: {
                             let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
-                            var time_isBlank = false
-                            if timeString != "00:00:00" {
-                                savedTimes.append(timeString) // Save the time when it's not 00:00:00
-                            } else {
-                                time_isBlank = true
-                            }
+                            
                             if isAnimating {
+                                // Reset button was pressed - don't save time
                                 isAnimating = false
                                 progress = 0.0 // Reset instantly without animation
                                 timer?.invalidate() // Stop the timer
                                 timer = nil
-                            } else if !time_isBlank {
-                                isAnimating = true
-                                // Set up the initial remaining seconds
-                                remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
-                                
-                                // Start the circular progress animation
-                                withAnimation(.linear(duration: animationDuration)) {
-                                    progress = 1.0
-                                }
-                                
-                                // Set up the timer to update the countdown every second
-                                timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                                    if remainingSeconds > 0 {
-                                        remainingSeconds -= 1
-                                    } else {
+                            } else {
+                                // Start button was pressed - only save and start if time isn't 00:00:00
+                                if timeString != "00:00:00" {
+                                    savedTimes.append(timeString) // Save the time only when starting
+                                    isAnimating = true
+                                    
+                                    // Set up the initial remaining seconds
+                                    remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
+                                    
+                                    // Start the circular progress animation
+                                    withAnimation(.linear(duration: animationDuration)) {
+                                        progress = 1.0
+                                    }
+                                    
+                                    // Set up the timer to update the countdown every second
+                                    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                                        if remainingSeconds > 0 {
+                                            remainingSeconds -= 1
+                                        } else {
+                                            timer?.invalidate()
+                                            timer = nil
+                                        }
+                                    }
+                                    
+                                    // Automatically reset after animation completes
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+                                        isAnimating = false
+                                        
+                                        withAnimation(
+                                            .smooth(duration:1)
+                                        ) {
+                                            progress = 0
+                                        }
+                                        
                                         timer?.invalidate()
                                         timer = nil
                                     }
-                                }
-                                
-                                // Automatically reset after animation completes
-                                DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-                                    
-                                    isAnimating = false
-                                    
-                                    withAnimation(
-                                        .smooth(duration:1)
-                                    ) {
-                                        progress = 0
-                                    }
-                                    
-                                    timer?.invalidate()
-                                    timer = nil
                                 }
                             }
                         }) {
@@ -204,15 +204,16 @@ struct ContentView: View {
                                 .cornerRadius(10)
                                 .overlay(
                                     Text(isAnimating ? "Reset" : "Start")
-                                        .foregroundColor(themeManager.textColor) // Dynamic text color
+                                        .foregroundColor(themeManager.textColor)
                                         .font(.headline)
                                 )
-                                .animation(.linear(duration: 0), value: progress) // Smooth animation
+                                .animation(.linear(duration: 0), value: progress)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 10) // Match corner radius
-                                        .stroke(Color.black, lineWidth: 1.5) // Black border
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.black, lineWidth: 1.5)
                                 )
                         }
+
                     }
                     .padding()
                 }
