@@ -8,13 +8,23 @@ struct ContentView: View {
     @State private var currentTime = "00:00:00" // The current time for the timer
     @State private var progress: CGFloat = 0.0
     @State private var isAnimating = false
+    @State private var remainingSeconds = 0 // Remaining seconds for countdown
+    @State private var timer: Timer? = nil
     
 
     let hours = Array(0..<24) // For hours (0 to 23)
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
     var animationDuration: Double {
         return Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond) // Convert to total seconds
-        }
+    }
+    
+    // Format remaining seconds to HH:MM:SS
+    var formattedTime: String {
+        let hours = remainingSeconds / 3600
+        let minutes = (remainingSeconds % 3600) / 60
+        let seconds = remainingSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
 
     var body: some View {
         ZStack {
@@ -88,8 +98,8 @@ struct ContentView: View {
                             .rotationEffect(.degrees(-90))
                         
                         VStack {
-                            // Display the selected time in HH:MM:SS format
-                            Text(String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
+                            // Display the countdown timer or selected time
+                            Text(isAnimating ? formattedTime : String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
                                 .font(.largeTitle)
                                 .padding()
                                 .foregroundColor(.white) // White text for the timer display
@@ -139,21 +149,40 @@ struct ContentView: View {
                             let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
                             if timeString != "00:00:00" {
                                 savedTimes.append(timeString) // Save the time when it's not 00:00:00
-                                }
+                            }
                             if isAnimating {
-                                    isAnimating = false
-                                    progress = 0.0 // Reset instantly without animation
-                                } else {
-                                    isAnimating = true
-                                    withAnimation(.linear(duration: animationDuration)) {
-                                        progress = 1.0
-                                    }
-                                    // Automatically reset after animation completes
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-                                                progress = 0.0 // Reset instantly without animation
-                                                isAnimating = false
-                                            }
+                                isAnimating = false
+                                progress = 0.0 // Reset instantly without animation
+                                timer?.invalidate() // Stop the timer
+                                timer = nil
+                            } else {
+                                isAnimating = true
+                                // Set up the initial remaining seconds
+                                remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
+                                
+                                // Start the circular progress animation
+                                withAnimation(.linear(duration: animationDuration)) {
+                                    progress = 1.0
                                 }
+                                
+                                // Set up the timer to update the countdown every second
+                                timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                                    if remainingSeconds > 0 {
+                                        remainingSeconds -= 1
+                                    } else {
+                                        timer?.invalidate()
+                                        timer = nil
+                                    }
+                                }
+                                
+                                // Automatically reset after animation completes
+                                DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+                                    progress = 0.0 // Reset instantly without animation
+                                    isAnimating = false
+                                    timer?.invalidate()
+                                    timer = nil
+                                }
+                            }
                         }) {
                             Rectangle()
                                 .fill(Color(hex: "#333C45"))
