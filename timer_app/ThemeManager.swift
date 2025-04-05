@@ -9,13 +9,16 @@ struct AppTheme {
 
 // Theme manager to store theme data
 class ThemeManager: ObservableObject {
-    @Published var currentThemeIndex: Int = 2 // Start with the third theme (current one)
+    @Published var currentThemeIndex: Int = 3 // Start with the third theme (current one)
     
     // Define the themes
     let themes: [AppTheme] = [
         AppTheme(background: "#4E454B", accent: "#F0EEF0", usesDarkText: true),  // First theme - light accent, use black text
         AppTheme(background: "#387FD3", accent: "#2CBAB4", usesDarkText: false), // Second theme - dark accent, use white text
-        AppTheme(background: "#D9535A", accent: "#333C45", usesDarkText: false)  // Third theme - dark accent, use white text
+        AppTheme(background: "#D9535A", accent: "#333C45", usesDarkText: false),// Third theme - dark accent, use white text
+        AppTheme(background: "#482661", accent: "#8344C1", usesDarkText: false),
+        AppTheme(background: "#323650", accent: "#2A9EC1", usesDarkText: false),
+        AppTheme(background: "#CD6A5C", accent: "#35C3BD", usesDarkText: true)
     ]
     
     // Function to cycle to the next theme
