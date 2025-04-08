@@ -7,16 +7,16 @@ struct SavedTimesView: View {
     @Binding var selectedHour: Int // Add binding for hour
     @Binding var selectedMinute: Int // Add binding for minute
     @Binding var selectedSecond: Int // Add binding for second
-    
+
     // Environment variable to dismiss this view and return to ContentView
     @Environment(\.dismiss) private var dismiss
-    
+
     // Access the theme manager from the environment
     @EnvironmentObject private var themeManager: ThemeManager
-    
+
     @State private var selectedTime = "" // To store the selected time from the list
     @State private var itemsBeingRemoved = Set<String>()
-    
+
     // Function to parse time string and set values
     func selectTime(_ timeString: String) {
         // Parse the time string (format: "HH:MM:SS")
@@ -25,12 +25,12 @@ struct SavedTimesView: View {
            let hours = Int(components[0]),
            let minutes = Int(components[1]),
            let seconds = Int(components[2]) {
-            
+
             // Set the values in ContentView
             selectedHour = hours
             selectedMinute = minutes
             selectedSecond = seconds
-            
+
             // Go back to ContentView
             dismiss()
         }
@@ -49,7 +49,7 @@ struct SavedTimesView: View {
                             .font(.headline)
                             .foregroundColor(themeManager.textColor)
                             .padding(.horizontal)
-                        
+
                         ForEach(recentlyUsedTimes, id: \.self) { time in
                             HStack {
                                 Text(time)
@@ -58,9 +58,9 @@ struct SavedTimesView: View {
                                     .frame(maxWidth: .infinity)
                                     .background(themeManager.backgroundColor)
                                     .cornerRadius(10)
-                                    
+
                                 Spacer()
-                                
+
                                 // Green Button with functionality
                                 Button(action: {
                                     selectTime(time)
@@ -74,18 +74,18 @@ struct SavedTimesView: View {
                             }
                             .padding(.horizontal)
                         }
-                        
+
                         Divider()
                             .background(themeManager.textColor)
                             .padding(.vertical, 5)
                     }
-                    
+
                     // All Saved Times Section
                     Text("All Saved Times")
                         .font(.headline)
                         .foregroundColor(themeManager.textColor)
                         .padding(.horizontal)
-                    
+
                     VStack(spacing: 20) {
                         ForEach(savedTimes, id: \.self) { time in
                             HStack {
@@ -95,7 +95,7 @@ struct SavedTimesView: View {
                                     .frame(maxWidth: .infinity)
                                     .background(themeManager.backgroundColor)
                                     .cornerRadius(10)
-                                    
+
                                 Spacer()
 
                                 // Delete Button
@@ -104,7 +104,7 @@ struct SavedTimesView: View {
                                     withAnimation(.easeInOut(duration: 0.5)) {
                                         itemsBeingRemoved.insert(time)
                                     }
-                                    
+
                                     // Delay actual removal to allow animation to complete
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                         if let index = savedTimes.firstIndex(of: time) {
@@ -123,7 +123,7 @@ struct SavedTimesView: View {
                                         .background(Color.red)
                                         .clipShape(Circle())
                                 }
-                                
+
                                 // Green Button with functionality
                                 Button(action: {
                                     selectTime(time)

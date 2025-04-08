@@ -12,21 +12,16 @@ struct ContentView: View {
     @State private var isAnimating = false
     @State private var remainingSeconds = 0 // Remaining seconds for countdown
     @State private var timer: Timer? = nil
-    
+
     @EnvironmentObject private var themeManager: ThemeManager
-    
+
     let hours = Array(0..<24) // For hours (0 to 23)
     let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
     var animationDuration: Double {
         return Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond) // Convert to total seconds
     }
-    
-    // Function to generate haptic feedback
-    func generateHapticFeedback() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-    }
-    
+
+
     // Format remaining seconds to HH:MM:SS
     var formattedTime: String {
         let hours = remainingSeconds / 3600
@@ -53,9 +48,9 @@ struct ContentView: View {
                                 Text("Timer")
                                     .font(.headline)
                                     .foregroundColor(themeManager.textColor)
-                                
+
                                 Spacer()
-                                
+
                                 HStack {
                                     Button(action: {
                                         themeManager.nextTheme() // Change to the next theme
@@ -65,7 +60,7 @@ struct ContentView: View {
                                             .foregroundColor(themeManager.textColor)
                                     }
                                     .padding()
-                                    
+
                                     // Updated NavigationLink to pass required bindings
                                     NavigationLink {
                                         SavedTimesView(
@@ -90,9 +85,9 @@ struct ContentView: View {
                             RoundedRectangle(cornerRadius: 15)
                                 .stroke(Color.black, lineWidth: 1.5)
                         )
-                    
+
                     Spacer()
-                    
+
                     // Circle for Timer and Time Selection
                     ZStack {
                         Circle()
@@ -108,13 +103,13 @@ struct ContentView: View {
                                     .stroke(Color.black, lineWidth: 2)
                                     .frame(width: 336, height: 336)
                             )
-                        
+
                         Circle()
                             .trim(from: 0, to: progress)
                             .stroke(Color.black, style: StrokeStyle(lineWidth: 13, lineCap: .round))
                             .frame(width: 350, height: 350)
                             .rotationEffect(.degrees(-90))
-                        
+
                         VStack {
                             // Display the countdown timer or selected time
                             Text(isAnimating ? formattedTime : String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
@@ -124,7 +119,7 @@ struct ContentView: View {
                         }
                     }
                     .padding()
-                    
+
                     // Time Picker: Hour, Minute, Second
                     HStack {
                         // Hour Picker
@@ -136,7 +131,7 @@ struct ContentView: View {
                         }
                         .frame(width: 80)
                         .pickerStyle(WheelPickerStyle())
-                        
+
                         // Minute Picker
                         Picker("Minutes", selection: $selectedMinute) {
                             ForEach(minutesAndSeconds, id: \.self) { minute in
@@ -146,7 +141,7 @@ struct ContentView: View {
                         }
                         .frame(width: 80)
                         .pickerStyle(WheelPickerStyle())
-                        
+
                         // Second Picker
                         Picker("Seconds", selection: $selectedSecond) {
                             ForEach(minutesAndSeconds, id: \.self) { second in
@@ -158,14 +153,14 @@ struct ContentView: View {
                         .pickerStyle(WheelPickerStyle())
                     }
                     .padding(.horizontal)
-                    
+
                     Spacer()
-                    
+
                     // Start Button with updated logic for recently used times
                     VStack {
                         Button(action: {
                             let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
-                            
+
                             if isAnimating {
                                 // Reset button was pressed - don't save time
                                 isAnimating = false
@@ -179,7 +174,7 @@ struct ContentView: View {
                                     if !savedTimes.contains(timeString) {
                                         savedTimes.append(timeString)
                                     }
-                                    
+
                                     // Add to recently used times list (max 3)
                                     if let index = recentlyUsedTimes.firstIndex(of: timeString) {
                                         recentlyUsedTimes.remove(at: index) // Remove from current position if exists
@@ -188,17 +183,17 @@ struct ContentView: View {
                                     if recentlyUsedTimes.count > 3 {
                                         recentlyUsedTimes.removeLast() // Keep only 3 most recent
                                     }
-                                    
+
                                     isAnimating = true
-                                    
+
                                     // Set up the initial remaining seconds
                                     remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
-                                    
+
                                     // Start the circular progress animation
                                     withAnimation(.linear(duration: animationDuration)) {
                                         progress = 1.0
                                     }
-                                    
+
                                     // Set up the timer to update the countdown every second
                                     timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
                                         if remainingSeconds > 0 {
@@ -206,24 +201,24 @@ struct ContentView: View {
                                         } else {
                                             timer?.invalidate()
                                             timer = nil
-                                            
-                                            // Generate haptic feedback when timer completes
-                                            generateHapticFeedback()
                                         }
                                     }
-                                    
+
                                     // Automatically reset after animation completes
                                     DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
                                         isAnimating = false
-                                        
+
                                         withAnimation(
                                             .smooth(duration:1)
                                         ) {
                                             progress = 0
                                         }
-                                        
+
                                         timer?.invalidate()
                                         timer = nil
+                                        
+                                        // Play sound when the timer finishes
+                                        SoundManager.shared.playSound(soundName: "alarm", soundExtension: "mp3") // Replace "alarm" and "mp3"
                                     }
                                 }
                             }
