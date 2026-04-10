@@ -1,18 +1,22 @@
 import SwiftUI
-import AVFoundation // Import AVFoundation
+import AVFoundation
+import UserNotifications
 
 @main
 struct timer_appApp: App {
     @StateObject private var themeManager = ThemeManager()
 
     init() {
-        // Configure the audio session
+        // Audio session — allow mixing with other apps' audio
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
-            print("Error configuring audio session: \(error.localizedDescription)")
+            print("Audio session error: \(error.localizedDescription)")
         }
+
+        // Request permission to show local notifications (for background timer completion)
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
     var body: some Scene {

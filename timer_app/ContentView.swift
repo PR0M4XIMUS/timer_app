@@ -1,29 +1,33 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 
 struct ContentView: View {
-    // Persistence
-    @AppStorage("savedTimesJSON") private var savedTimesJSON: String = "[]"
-    @AppStorage("recentlyUsedJSON") private var recentlyUsedJSON: String = "[]"
+    // MARK: - Persistence
+    @AppStorage("savedTimesJSON")    private var savedTimesJSON:    String = "[]"
+    @AppStorage("recentlyUsedJSON") private var recentlyUsedJSON:  String = "[]"
 
-    @State private var savedTimes: [String] = []
-    @State private var recentlyUsedTimes: [String] = []
-    @State private var selectedHour = 0
+    @State private var savedTimes:       [String] = []
+    @State private var recentlyUsedTimes:[String] = []
+
+    // MARK: - Timer state
+    @State private var selectedHour   = 0
     @State private var selectedMinute = 0
     @State private var selectedSecond = 0
-    @State private var progress: CGFloat = 0.0
-    @State private var isAnimating = false
+    @State private var progress:        CGFloat = 0.0
+    @State private var isAnimating      = false
     @State private var remainingSeconds = 0
-    @State private var timer: Timer? = nil
+    @State private var timer:           Timer?  = nil
 
     @EnvironmentObject private var themeManager: ThemeManager
 
-    let hours = Array(0..<24)
+    let hours            = Array(0..<24)
     let minutesAndSeconds = Array(0..<60)
 
-    var animationDuration: Double {
-        Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond)
+    var totalSeconds: Int {
+        selectedHour * 3600 + selectedMinute * 60 + selectedSecond
     }
+    var animationDuration: Double { Double(totalSeconds) }
 
     var formattedTime: String {
         let h = remainingSeconds / 3600
@@ -38,22 +42,21 @@ struct ContentView: View {
             : String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
     }
 
-    // MARK: - Persistence
+    // MARK: - Storage helpers
 
     func loadFromStorage() {
-        savedTimes = decode(savedTimesJSON)
+        savedTimes        = decode(savedTimesJSON)
         recentlyUsedTimes = decode(recentlyUsedJSON)
     }
 
     func saveToStorage() {
-        savedTimesJSON = encode(savedTimes)
-        recentlyUsedJSON = encode(recentlyUsedTimes)
+        savedTimesJSON    = encode(savedTimes)
+        recentlyUsedJSON  = encode(recentlyUsedTimes)
     }
 
     private func decode(_ json: String) -> [String] {
         (try? JSONDecoder().decode([String].self, from: Data(json.utf8))) ?? []
     }
-
     private func encode(_ array: [String]) -> String {
         (try? String(data: JSONEncoder().encode(array), encoding: .utf8)) ?? "[]"
     }
@@ -63,8 +66,28 @@ struct ContentView: View {
     func haptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
+    func successHaptic() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
 
-    // MARK: - Timer Actions
+    // MARK: - Notifications
+
+    func scheduleNotification(after seconds: Double) {
+        let content = UNMutableNotificationContent()
+        content.title = "Timer Complete"
+        content.body  = "Your timer has finished."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(seconds, 1), repeats: false)
+        let request = UNNotificationRequest(identifier: "timerDone", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func cancelNotification() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timerDone"])
+    }
+
+    // MARK: - Timer actions
 
     func startTimer() {
         let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
@@ -72,18 +95,17 @@ struct ContentView: View {
 
         haptic(.medium)
 
-        if !savedTimes.contains(timeString) {
-            savedTimes.append(timeString)
-        }
-        if let idx = recentlyUsedTimes.firstIndex(of: timeString) {
-            recentlyUsedTimes.remove(at: idx)
-        }
+        // Save
+        if !savedTimes.contains(timeString) { savedTimes.append(timeString) }
+        if let i = recentlyUsedTimes.firstIndex(of: timeString) { recentlyUsedTimes.remove(at: i) }
         recentlyUsedTimes.insert(timeString, at: 0)
         if recentlyUsedTimes.count > 3 { recentlyUsedTimes.removeLast() }
         saveToStorage()
 
-        isAnimating = true
-        remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
+        // Start
+        isAnimating      = true
+        remainingSeconds = totalSeconds
+        scheduleNotification(after: animationDuration)
 
         withAnimation(.linear(duration: animationDuration)) {
             progress = 1.0
@@ -104,6 +126,7 @@ struct ContentView: View {
             withAnimation(.smooth(duration: 0.8)) { progress = 0 }
             timer?.invalidate()
             timer = nil
+            successHaptic()
             SoundManager.shared.playSound(soundName: "alarm", soundExtension: "mp3")
         }
     }
@@ -114,6 +137,7 @@ struct ContentView: View {
         withAnimation(.easeOut(duration: 0.4)) { progress = 0.0 }
         timer?.invalidate()
         timer = nil
+        cancelNotification()
         SoundManager.shared.stopSound()
     }
 
@@ -121,12 +145,14 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            // Animated background
             themeManager.backgroundColor
                 .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.45), value: themeManager.currentThemeIndex)
 
             VStack(spacing: 0) {
 
-                // MARK: Floating Navbar
+                // MARK: Pill navbar
                 HStack {
                     Text("Timer")
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
@@ -137,7 +163,7 @@ struct ContentView: View {
                     HStack(spacing: 2) {
                         Button {
                             haptic(.light)
-                            withAnimation(.spring(duration: 0.4)) {
+                            withAnimation(.easeInOut(duration: 0.45)) {
                                 themeManager.nextTheme()
                             }
                         } label: {
@@ -149,11 +175,11 @@ struct ContentView: View {
 
                         NavigationLink {
                             SavedTimesView(
-                                savedTimes: $savedTimes,
+                                savedTimes:        $savedTimes,
                                 recentlyUsedTimes: $recentlyUsedTimes,
-                                selectedHour: $selectedHour,
-                                selectedMinute: $selectedMinute,
-                                selectedSecond: $selectedSecond
+                                selectedHour:      $selectedHour,
+                                selectedMinute:    $selectedMinute,
+                                selectedSecond:    $selectedSecond
                             )
                             .environmentObject(themeManager)
                         } label: {
@@ -176,23 +202,24 @@ struct ContentView: View {
 
                 Spacer()
 
-                // MARK: Progress Ring
+                // MARK: Progress ring
                 ZStack {
                     // Track
                     Circle()
-                        .stroke(themeManager.textColor.opacity(0.13), lineWidth: 15)
+                        .stroke(themeManager.textColor.opacity(0.12), lineWidth: 15)
                         .frame(width: 290, height: 290)
 
-                    // Progress arc
+                    // Progress arc — uses accentColor for per-theme colour
                     Circle()
                         .trim(from: 0, to: progress)
                         .stroke(
-                            themeManager.textColor.opacity(0.9),
+                            themeManager.accentColor,
                             style: StrokeStyle(lineWidth: 15, lineCap: .round)
                         )
                         .frame(width: 290, height: 290)
                         .rotationEffect(.degrees(-90))
-                        .shadow(color: themeManager.textColor.opacity(0.25), radius: 8, x: 0, y: 0)
+                        .shadow(color: themeManager.accentColor.opacity(0.5), radius: 10, x: 0, y: 0)
+                        .animation(.easeInOut(duration: 0.45), value: themeManager.currentThemeIndex)
 
                     // Time label
                     Text(displayedTime)
@@ -204,7 +231,7 @@ struct ContentView: View {
                 }
                 .padding(.vertical, 20)
 
-                // MARK: Pickers
+                // MARK: Wheel pickers
                 HStack(spacing: 0) {
                     Picker("Hours", selection: $selectedHour) {
                         ForEach(hours, id: \.self) { Text("\($0)h").tag($0) }
@@ -237,7 +264,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                // MARK: Start / Reset Button
+                // MARK: Start / Reset button
                 Button {
                     isAnimating ? resetTimer() : startTimer()
                 } label: {
@@ -254,7 +281,9 @@ struct ContentView: View {
                 .padding(.bottom, 36)
             }
         }
+        .toolbar(.hidden, for: .navigationBar)
         .environment(\.colorScheme, themeManager.preferredColorScheme)
+        .animation(.easeInOut(duration: 0.45), value: themeManager.currentThemeIndex)
         .onAppear(perform: loadFromStorage)
     }
 }
