@@ -1,249 +1,261 @@
 import SwiftUI
-import UIKit // Required for haptic feedback
+import UIKit
 
 struct ContentView: View {
+    // Persistence
+    @AppStorage("savedTimesJSON") private var savedTimesJSON: String = "[]"
+    @AppStorage("recentlyUsedJSON") private var recentlyUsedJSON: String = "[]"
+
+    @State private var savedTimes: [String] = []
+    @State private var recentlyUsedTimes: [String] = []
     @State private var selectedHour = 0
     @State private var selectedMinute = 0
     @State private var selectedSecond = 0
-    @State private var savedTimes = [String]() // List to store saved times
-    @State private var recentlyUsedTimes = [String]() // Track recently used times
-    @State private var currentTime = "00:00:00" // The current time for the timer
     @State private var progress: CGFloat = 0.0
     @State private var isAnimating = false
-    @State private var remainingSeconds = 0 // Remaining seconds for countdown
+    @State private var remainingSeconds = 0
     @State private var timer: Timer? = nil
 
     @EnvironmentObject private var themeManager: ThemeManager
 
-    let hours = Array(0..<24) // For hours (0 to 23)
-    let minutesAndSeconds = Array(0..<60) // For minutes and seconds (0 to 59)
+    let hours = Array(0..<24)
+    let minutesAndSeconds = Array(0..<60)
+
     var animationDuration: Double {
-        return Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond) // Convert to total seconds
+        Double(selectedHour * 3600 + selectedMinute * 60 + selectedSecond)
     }
 
-
-    // Format remaining seconds to HH:MM:SS
     var formattedTime: String {
-        let hours = remainingSeconds / 3600
-        let minutes = (remainingSeconds % 3600) / 60
-        let seconds = remainingSeconds % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        let h = remainingSeconds / 3600
+        let m = (remainingSeconds % 3600) / 60
+        let s = remainingSeconds % 60
+        return String(format: "%02d:%02d:%02d", h, m, s)
     }
+
+    var displayedTime: String {
+        isAnimating
+            ? formattedTime
+            : String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
+    }
+
+    // MARK: - Persistence
+
+    func loadFromStorage() {
+        savedTimes = decode(savedTimesJSON)
+        recentlyUsedTimes = decode(recentlyUsedJSON)
+    }
+
+    func saveToStorage() {
+        savedTimesJSON = encode(savedTimes)
+        recentlyUsedJSON = encode(recentlyUsedTimes)
+    }
+
+    private func decode(_ json: String) -> [String] {
+        (try? JSONDecoder().decode([String].self, from: Data(json.utf8))) ?? []
+    }
+
+    private func encode(_ array: [String]) -> String {
+        (try? String(data: JSONEncoder().encode(array), encoding: .utf8)) ?? "[]"
+    }
+
+    // MARK: - Haptics
+
+    func haptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    }
+
+    // MARK: - Timer Actions
+
+    func startTimer() {
+        let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
+        guard timeString != "00:00:00" else { return }
+
+        haptic(.medium)
+
+        if !savedTimes.contains(timeString) {
+            savedTimes.append(timeString)
+        }
+        if let idx = recentlyUsedTimes.firstIndex(of: timeString) {
+            recentlyUsedTimes.remove(at: idx)
+        }
+        recentlyUsedTimes.insert(timeString, at: 0)
+        if recentlyUsedTimes.count > 3 { recentlyUsedTimes.removeLast() }
+        saveToStorage()
+
+        isAnimating = true
+        remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
+
+        withAnimation(.linear(duration: animationDuration)) {
+            progress = 1.0
+        }
+
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if remainingSeconds > 0 {
+                remainingSeconds -= 1
+            } else {
+                timer?.invalidate()
+                timer = nil
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+            guard isAnimating else { return }
+            isAnimating = false
+            withAnimation(.smooth(duration: 0.8)) { progress = 0 }
+            timer?.invalidate()
+            timer = nil
+            SoundManager.shared.playSound(soundName: "alarm", soundExtension: "mp3")
+        }
+    }
+
+    func resetTimer() {
+        haptic(.medium)
+        isAnimating = false
+        withAnimation(.easeOut(duration: 0.4)) { progress = 0.0 }
+        timer?.invalidate()
+        timer = nil
+        SoundManager.shared.stopSound()
+    }
+
+    // MARK: - Body
 
     var body: some View {
         ZStack {
-            // Background Color - now using theme
-            themeManager.backgroundColor.ignoresSafeArea()
+            themeManager.backgroundColor
+                .ignoresSafeArea()
 
-            HStack {
-                Spacer()
-                VStack {
-                    // Navbar with button
-                    Rectangle()
-                        .fill(themeManager.accentColor)
-                        .frame(height: 40)
-                        .cornerRadius(15)
-                        .overlay(
-                            HStack {
-                                Text("Timer")
-                                    .font(.headline)
-                                    .foregroundColor(themeManager.textColor)
+            VStack(spacing: 0) {
 
-                                Spacer()
-
-                                HStack {
-                                    Button(action: {
-                                        themeManager.nextTheme() // Change to the next theme
-                                    }) {
-                                        Image(systemName: "paintbrush.pointed")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(themeManager.textColor)
-                                    }
-                                    .padding()
-
-                                    // Updated NavigationLink to pass required bindings
-                                    NavigationLink {
-                                        SavedTimesView(
-                                            savedTimes: $savedTimes,
-                                            currentTime: $currentTime,
-                                            recentlyUsedTimes: $recentlyUsedTimes,
-                                            selectedHour: $selectedHour,
-                                            selectedMinute: $selectedMinute,
-                                            selectedSecond: $selectedSecond
-                                        )
-                                        .environmentObject(themeManager)
-                                    } label: {
-                                        Image(systemName: "clock")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(themeManager.textColor)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(Color.black, lineWidth: 1.5)
-                        )
+                // MARK: Floating Navbar
+                HStack {
+                    Text("Timer")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(themeManager.textColor)
 
                     Spacer()
 
-                    // Circle for Timer and Time Selection
-                    ZStack {
-                        Circle()
-                            .stroke(themeManager.accentColor, lineWidth: 13)
-                            .frame(width: 350, height: 350)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.black, lineWidth: 2)
-                                    .frame(width: 364, height: 364)
+                    HStack(spacing: 2) {
+                        Button {
+                            haptic(.light)
+                            withAnimation(.spring(duration: 0.4)) {
+                                themeManager.nextTheme()
+                            }
+                        } label: {
+                            Image(systemName: "paintbrush.pointed.fill")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(themeManager.textColor)
+                                .frame(width: 38, height: 38)
+                        }
+
+                        NavigationLink {
+                            SavedTimesView(
+                                savedTimes: $savedTimes,
+                                recentlyUsedTimes: $recentlyUsedTimes,
+                                selectedHour: $selectedHour,
+                                selectedMinute: $selectedMinute,
+                                selectedSecond: $selectedSecond
                             )
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.black, lineWidth: 2)
-                                    .frame(width: 336, height: 336)
-                            )
-
-                        Circle()
-                            .trim(from: 0, to: progress)
-                            .stroke(Color.black, style: StrokeStyle(lineWidth: 13, lineCap: .round))
-                            .frame(width: 350, height: 350)
-                            .rotationEffect(.degrees(-90))
-
-                        VStack {
-                            // Display the countdown timer or selected time
-                            Text(isAnimating ? formattedTime : String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond))
-                                .font(.largeTitle)
-                                .padding()
-                                .foregroundColor(themeManager.textColor) // Dynamic text color
+                            .environmentObject(themeManager)
+                        } label: {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(themeManager.textColor)
+                                .frame(width: 38, height: 38)
                         }
                     }
-                    .padding()
-
-                    // Time Picker: Hour, Minute, Second
-                    HStack {
-                        // Hour Picker
-                        Picker("Hours", selection: $selectedHour) {
-                            ForEach(hours, id: \.self) { hour in
-                                Text("\(hour)h")
-                                    .foregroundColor(themeManager.textColor)
-                            }
-                        }
-                        .frame(width: 80)
-                        .pickerStyle(WheelPickerStyle())
-
-                        // Minute Picker
-                        Picker("Minutes", selection: $selectedMinute) {
-                            ForEach(minutesAndSeconds, id: \.self) { minute in
-                                Text("\(minute)m")
-                                    .foregroundColor(themeManager.textColor)
-                            }
-                        }
-                        .frame(width: 80)
-                        .pickerStyle(WheelPickerStyle())
-
-                        // Second Picker
-                        Picker("Seconds", selection: $selectedSecond) {
-                            ForEach(minutesAndSeconds, id: \.self) { second in
-                                Text("\(second)s")
-                                    .foregroundColor(themeManager.textColor)
-                            }
-                        }
-                        .frame(width: 80)
-                        .pickerStyle(WheelPickerStyle())
-                    }
-                    .padding(.horizontal)
-
-                    Spacer()
-
-                    // Start Button with updated logic for recently used times
-                    VStack {
-                        Button(action: {
-                            let timeString = String(format: "%02d:%02d:%02d", selectedHour, selectedMinute, selectedSecond)
-
-                            if isAnimating {
-                                // Reset button was pressed - don't save time
-                                isAnimating = false
-                                progress = 0.0 // Reset instantly without animation
-                                timer?.invalidate() // Stop the timer
-                                timer = nil
-                            } else {
-                                // Start button was pressed - only save and start if time isn't 00:00:00
-                                if timeString != "00:00:00" {
-                                    // Only save the time if it's not already in the list
-                                    if !savedTimes.contains(timeString) {
-                                        savedTimes.append(timeString)
-                                    }
-
-                                    // Add to recently used times list (max 3)
-                                    if let index = recentlyUsedTimes.firstIndex(of: timeString) {
-                                        recentlyUsedTimes.remove(at: index) // Remove from current position if exists
-                                    }
-                                    recentlyUsedTimes.insert(timeString, at: 0) // Add to the beginning
-                                    if recentlyUsedTimes.count > 3 {
-                                        recentlyUsedTimes.removeLast() // Keep only 3 most recent
-                                    }
-
-                                    isAnimating = true
-
-                                    // Set up the initial remaining seconds
-                                    remainingSeconds = selectedHour * 3600 + selectedMinute * 60 + selectedSecond
-
-                                    // Start the circular progress animation
-                                    withAnimation(.linear(duration: animationDuration)) {
-                                        progress = 1.0
-                                    }
-
-                                    // Set up the timer to update the countdown every second
-                                    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                                        if remainingSeconds > 0 {
-                                            remainingSeconds -= 1
-                                        } else {
-                                            timer?.invalidate()
-                                            timer = nil
-                                        }
-                                    }
-
-                                    // Automatically reset after animation completes
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-                                        isAnimating = false
-
-                                        withAnimation(
-                                            .smooth(duration:1)
-                                        ) {
-                                            progress = 0
-                                        }
-
-                                        timer?.invalidate()
-                                        timer = nil
-                                        
-                                        // Play sound when the timer finishes
-                                        SoundManager.shared.playSound(soundName: "alarm", soundExtension: "mp3") // Replace "alarm" and "mp3"
-                                    }
-                                }
-                            }
-                        }) {
-                            Rectangle()
-                                .fill(themeManager.accentColor)
-                                .frame(width: 125, height: 45)
-                                .cornerRadius(10)
-                                .overlay(
-                                    Text(isAnimating ? "Reset" : "Start")
-                                        .foregroundColor(themeManager.textColor)
-                                        .font(.headline)
-                                )
-                                .animation(.linear(duration: 0), value: progress)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.black, lineWidth: 1.5)
-                                )
-                        }
-                    }
-                    .padding()
                 }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(themeManager.textColor.opacity(0.15), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+
                 Spacer()
+
+                // MARK: Progress Ring
+                ZStack {
+                    // Track
+                    Circle()
+                        .stroke(themeManager.textColor.opacity(0.13), lineWidth: 15)
+                        .frame(width: 290, height: 290)
+
+                    // Progress arc
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            themeManager.textColor.opacity(0.9),
+                            style: StrokeStyle(lineWidth: 15, lineCap: .round)
+                        )
+                        .frame(width: 290, height: 290)
+                        .rotationEffect(.degrees(-90))
+                        .shadow(color: themeManager.textColor.opacity(0.25), radius: 8, x: 0, y: 0)
+
+                    // Time label
+                    Text(displayedTime)
+                        .font(.system(size: 48, weight: .thin, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(themeManager.textColor)
+                        .contentTransition(.numericText())
+                        .animation(.default, value: remainingSeconds)
+                }
+                .padding(.vertical, 20)
+
+                // MARK: Pickers
+                HStack(spacing: 0) {
+                    Picker("Hours", selection: $selectedHour) {
+                        ForEach(hours, id: \.self) { Text("\($0)h").tag($0) }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .pickerStyle(.wheel)
+                    .disabled(isAnimating)
+
+                    Picker("Minutes", selection: $selectedMinute) {
+                        ForEach(minutesAndSeconds, id: \.self) { Text("\($0)m").tag($0) }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .pickerStyle(.wheel)
+                    .disabled(isAnimating)
+
+                    Picker("Seconds", selection: $selectedSecond) {
+                        ForEach(minutesAndSeconds, id: \.self) { Text("\($0)s").tag($0) }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .pickerStyle(.wheel)
+                    .disabled(isAnimating)
+                }
+                .frame(height: 150)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .strokeBorder(themeManager.textColor.opacity(0.12), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 16)
+
+                Spacer()
+
+                // MARK: Start / Reset Button
+                Button {
+                    isAnimating ? resetTimer() : startTimer()
+                } label: {
+                    Text(isAnimating ? "Reset" : "Start")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(themeManager.textColor)
+                        .frame(width: 160, height: 54)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(themeManager.textColor.opacity(0.2), lineWidth: 0.5)
+                        )
+                }
+                .padding(.bottom, 36)
             }
         }
+        .environment(\.colorScheme, themeManager.preferredColorScheme)
+        .onAppear(perform: loadFromStorage)
     }
 }
 

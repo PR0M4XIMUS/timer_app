@@ -3,17 +3,15 @@ import AVFoundation
 class SoundManager {
     static let shared = SoundManager()
 
-    var audioPlayer: AVAudioPlayer?
+    private var audioPlayer: AVAudioPlayer?
 
     private init() {}
 
     func playSound(soundName: String, soundExtension: String) {
-        guard let url = Bundle.main.url(forResource: soundName,
-                                            withExtension: soundExtension) else {
-            print("Error: Sound file not found")
+        guard let url = Bundle.main.url(forResource: soundName, withExtension: soundExtension) else {
+            print("Error: Sound file '\(soundName).\(soundExtension)' not found")
             return
         }
-
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.prepareToPlay()
@@ -21,5 +19,10 @@ class SoundManager {
         } catch {
             print("Error playing sound: \(error.localizedDescription)")
         }
+    }
+
+    func stopSound() {
+        audioPlayer?.stop()
+        audioPlayer = nil
     }
 }
